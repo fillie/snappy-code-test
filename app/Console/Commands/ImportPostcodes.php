@@ -193,32 +193,26 @@ class ImportPostcodes extends Command
         while (($row = fgetcsv($handle)) !== false) {
 
             $rowWithColumnHeaders = array_combine($header, $row);
-            if (!$rowWithColumnHeaders) {
-                $this->warn("Failed to combine CSV header with data row at: {$rowWithColumnHeaders}.");
-                continue;
-            }
 
             $chunkToBeInserted[] = [
-                'postcode'   => $rowWithColumnHeaders['postcode'],
-                'lat'        => $rowWithColumnHeaders['lat'] ?? null,
-                'lng'        => $rowWithColumnHeaders['lng'] ?? null,
+                'postcode' => $rowWithColumnHeaders['postcode'],
+                'latitude' => $rowWithColumnHeaders['latitude'],
+                'longitude' => $rowWithColumnHeaders['longitude'],
             ];
 
             // We have reached our target chunk size, so we attempt the insert
             if (count($chunkToBeInserted) >= self::CHUNK_SIZE) {
-                $this->processChunk($chunkToBeInserted, $currentRow);
-
-                // We now empty our chunk to fill with the next batch
+                $this->processChunk($chunkToBeInserted);
+                // Empty the chunk for the next batch
                 $chunkToBeInserted = [];
                 $this->output->progressAdvance(self::CHUNK_SIZE);
             }
+            $currentRow++;
         }
 
-        // We have completed our loop, but we never reached our chunk target, so must insert those records
-        // separately at the end
-
+        // Insert any remaining records not forming a complete chunk
         if (!empty($chunkToBeInserted)) {
-            $this->processChunk($chunkToBeInserted, $currentRow);
+            $this->processChunk($chunkToBeInserted);
             $this->output->progressAdvance(count($chunkToBeInserted));
         }
 
@@ -232,32 +226,28 @@ class ImportPostcodes extends Command
      * Responsible for error handling and rolling back the transaction should an insert fail.
      *
      * @param array $chunkToBeInserted
-     * @param int $currentRow
      * @return void
+     * @throws Exception
      */
-    protected function processChunk(array $chunkToBeInserted, int $currentRow): void
+    protected function processChunk(array $chunkToBeInserted): void
     {
         try {
-            $this->insertChunk($chunkToBeInserted, $currentRow);
+            $this->insertChunk($chunkToBeInserted);
         } catch (Exception $e) {
             DB::rollBack();
-            $this->error($e->getMessage());
+            throw new Exception("Failed to insert chunk: {$e->getMessage()}");
         }
     }
 
     /**
-     * Attempts to insert a chunk per time.
+     * Attempts to insert a chunk at a time.
      *
      * @param array $batchData
-     * @param int $currentRow
      * @return void
+     * @throws Exception
      */
-    protected function insertChunk(array $batchData, int $currentRow): void
+    protected function insertChunk(array $batchData): void
     {
-        try {
-            DB::table('postcodes')->insert($batchData);
-        } catch (Exception $e) {
-            $this->error("Error inserting batch ending at row {$currentRow}: " . $e->getMessage());
-        }
+        //DB::table('postcodes')->insert($batchData);
     }
 }
