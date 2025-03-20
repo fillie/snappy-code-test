@@ -9,6 +9,7 @@ use App\Models\Store;
 use App\DTO\StoreDTO;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class StoreService
 {
@@ -81,7 +82,7 @@ class StoreService
     {
         $coordinates = $this->postcodeService->getCoordinatesByPostcode($deliverableDTO->postcode);
         if (!$coordinates) {
-            throw new Exception('Postcode not found');
+            throw new NotFoundHttpException('Postcode not found');
         }
         $lat = $coordinates['latitude'];
         $lng = $coordinates['longitude'];

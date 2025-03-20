@@ -9,6 +9,7 @@ use App\Http\Requests\Deliverable;
 use App\Http\Requests\NearbyStore;
 use App\Services\StoreService;
 use App\DTO\StoreDTO;
+use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Http\JsonResponse;
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -80,7 +81,13 @@ class StoreController extends Controller
     {
         try {
             $result = $this->storeService->getDeliverableStores(new DeliverableRequestDTO($request->all()));
-        } catch (Exception $e) {
+        }
+        catch (HttpClientException) {
+            return response()->json([
+                'error' => 'No record was found for the given postcode.'
+            ], 404);
+        }
+        catch (Exception $e) {
             $this->logger->error('Error searching stores for postcode: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'error' => 'An error occurred while searching stores for given postcode.'
