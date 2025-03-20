@@ -4,17 +4,17 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class NearbyStore extends FormRequest
+class Deliverable extends FormRequest
 {
     /**
+     * TODO I would usually add proper validation on a postcode.
+     *
      * @return string[]
      */
     public function rules(): array
     {
         return [
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'radius' => 'sometimes|numeric|min:0'
+            'postcode' => 'required|string',
         ];
     }
 }
