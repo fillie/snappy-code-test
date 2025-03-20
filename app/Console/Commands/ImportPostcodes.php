@@ -2,10 +2,13 @@
 
 namespace App\Console\Commands;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Psr7\Response;
 use Illuminate\Console\Command;
-use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
+use Psr\Http\Message\ResponseInterface;
 use ZipArchive;
 use Exception;
 
@@ -14,6 +17,8 @@ class ImportPostcodes extends Command
     private string $postcodeUrlToImport;
     private string $postcodeLocalFilePath;
     private string $postcodeFilename;
+    private Client $httpClient;
+    private Filesystem $filesystem;
 
     private const CHUNK_SIZE = 500;
 
@@ -31,11 +36,20 @@ class ImportPostcodes extends Command
      */
     protected $description = 'Import postcodes from a downloaded CSV into the database';
 
-    public function __construct()
-    {
-        $this->postcodeUrlToImport = config('console.postcode_url_to_import');
-        $this->postcodeLocalFilePath = config('console.postcode_local_file_path');
-        $this->postcodeFilename = config('console.postcode_filename');
+    public function __construct(
+        Client $httpClient,
+        Filesystem $filesystem,
+        ?string $postcodeUrlToImport = null,
+        ?string $postcodeLocalFilePath = null,
+        ?string $postcodeFilename = null
+    ) {
+        $this->httpClient = $httpClient;
+        $this->filesystem = $filesystem;
+
+        // Use the injected values or fall back to the config() helper.
+        $this->postcodeUrlToImport = $postcodeUrlToImport ?? config('console.postcode_url_to_import');
+        $this->postcodeLocalFilePath = $postcodeLocalFilePath ?? config('console.postcode_local_file_path');
+        $this->postcodeFilename = $postcodeFilename ?? config('console.postcode_filename');
 
         parent::__construct();
     }
@@ -45,39 +59,9 @@ class ImportPostcodes extends Command
      */
     public function handle(): int
     {
-        if (!$this->postcodeUrlToImport) {
-            $this->error("Postcodes URL is not defined in configuration.");
-            return 1;
-        }
-
-        // Attempt to download Zip containing CSV from URL
         try {
-            $response = $this->fetchCsvFile($this->postcodeUrlToImport);
-        } catch (Exception $exception) {
-            $this->error($exception->getMessage());
-            return 1;
-        }
-
-        // Save Zip file locally
-        try {
-            $file = $this->saveCsvFile($response);
-        } catch (Exception $exception) {
-            $this->error($exception->getMessage());
-            return 1;
-        }
-
-        // Extract Zip file to access CSV
-        try {
-            $csvFilePath = $this->unzipFile($file);
-        } catch (Exception $exception) {
-            $this->error($exception->getMessage());
-            return 1;
-        }
-
-        // Process CSV file and import data into the database
-        try {
-            $this->processCsvFile($csvFilePath);
-        } catch (Exception $exception) {
+            $this->runImport();
+        } catch (Exception | GuzzleException $exception) {
             $this->error($exception->getMessage());
             return 1;
         }
@@ -86,18 +70,36 @@ class ImportPostcodes extends Command
     }
 
     /**
+     * The main workflow of the import process.
+     *
+     * @throws Exception
+     * @throws GuzzleException
+     */
+    private function runImport(): void
+    {
+        if (!$this->postcodeUrlToImport) {
+            throw new Exception("Postcodes URL is not defined in configuration.");
+        }
+
+        $response = $this->fetchCsvFile($this->postcodeUrlToImport);
+        $zipFilePath = $this->saveCsvFile($response);
+        $csvFilePath = $this->unzipFile($zipFilePath);
+        $this->processCsvFile($csvFilePath);
+    }
+
+    /**
      * Responsible for downloading the CSV file (as a Zip) and returning its response.
      *
      * @param string $url
-     * @return Response
-     * @throws Exception
+     * @return ResponseInterface
+     * @throws Exception|GuzzleException
      */
-    protected function fetchCsvFile(string $url): Response
+    private function fetchCsvFile(string $url): ResponseInterface
     {
         $this->info("Downloading postcodes file from: {$url}");
 
-        $response = Http::get($url);
-        if (!$response->successful()) {
+        $response = $this->httpClient->get($url);
+        if ($response->getStatusCode() !== 200) {
             throw new Exception("Failed to download file from: {$url}");
         }
 
@@ -112,18 +114,19 @@ class ImportPostcodes extends Command
      * @return string
      * @throws Exception
      */
-    protected function saveCsvFile(Response $response): string
+    private function saveCsvFile(Response $response): string
     {
         $this->info("Attempting to save Zip file.");
-        $zipFilePath = storage_path($this->postcodeLocalFilePath);
+        $zipFilePath = $this->getStoragePath($this->postcodeLocalFilePath);
 
-        if (!is_dir(dirname($zipFilePath))) {
-            mkdir(dirname($zipFilePath), 0755, true);
+        if (!$this->filesystem->exists(dirname($this->postcodeLocalFilePath))) {
+            $this->filesystem->makeDirectory(dirname($this->postcodeLocalFilePath), 0755, true);
         }
-        file_put_contents($zipFilePath, $response->body());
+
+        $this->filesystem->put($this->postcodeLocalFilePath, $response->getBody());
         $this->info("Zip file imported. File saved to {$zipFilePath}");
 
-        if (!file_exists($zipFilePath)) {
+        if (!$this->filesystem->exists($this->postcodeLocalFilePath)) {
             throw new Exception("Failed to store file: {$zipFilePath}");
         }
 
@@ -137,7 +140,7 @@ class ImportPostcodes extends Command
      * @return string
      * @throws Exception
      */
-    protected function unzipFile(string $zipFilePath): string
+    private function unzipFile(string $zipFilePath): string
     {
         $this->info("Attempting to extract file.");
 
@@ -146,19 +149,17 @@ class ImportPostcodes extends Command
             throw new Exception("Failed to open zip file: {$zipFilePath}");
         }
 
-        $extractPath = storage_path('app/import');
+        $extractPath = $this->getStoragePath('app/import');
         $zip->extractTo($extractPath);
         $zip->close();
         $this->info("Extraction complete to {$extractPath}");
 
         $csvFilePath = $extractPath . '/' . $this->postcodeFilename;
-        if (!file_exists($csvFilePath)) {
+        if (!$this->filesystem->exists($csvFilePath)) {
             throw new Exception("Failed to find CSV file: {$csvFilePath}");
         }
 
-        if (!fopen($csvFilePath, 'r')) {
-            throw new Exception("Failed to open CSV file: {$csvFilePath}");
-        }
+        $this->assertCsvIsReadable($csvFilePath);
 
         return $csvFilePath;
     }
@@ -170,7 +171,7 @@ class ImportPostcodes extends Command
      * @return void
      * @throws Exception
      */
-    protected function processCsvFile(string $csvFilePath): void
+    private function processCsvFile(string $csvFilePath): void
     {
         $this->info("Starting import from CSV: {$csvFilePath}");
 
@@ -187,30 +188,25 @@ class ImportPostcodes extends Command
         $chunkToBeInserted = [];
         $currentRow = 0;
 
-        // Start the transaction, so data is rolled back in the case of an issue.
         DB::beginTransaction();
 
         while (($row = fgetcsv($handle)) !== false) {
-
             $rowWithColumnHeaders = array_combine($header, $row);
 
             $chunkToBeInserted[] = [
-                'postcode' => $rowWithColumnHeaders['postcode'],
-                'latitude' => $rowWithColumnHeaders['latitude'],
+                'postcode'  => $rowWithColumnHeaders['postcode'],
+                'latitude'  => $rowWithColumnHeaders['latitude'],
                 'longitude' => $rowWithColumnHeaders['longitude'],
             ];
 
-            // We have reached our target chunk size, so we attempt the insert
             if (count($chunkToBeInserted) >= self::CHUNK_SIZE) {
                 $this->processChunk($chunkToBeInserted);
-                // Empty the chunk for the next batch
                 $chunkToBeInserted = [];
                 $this->output->progressAdvance(self::CHUNK_SIZE);
             }
             $currentRow++;
         }
 
-        // Insert any remaining records not forming a complete chunk
         if (!empty($chunkToBeInserted)) {
             $this->processChunk($chunkToBeInserted);
             $this->output->progressAdvance(count($chunkToBeInserted));
@@ -229,7 +225,7 @@ class ImportPostcodes extends Command
      * @return void
      * @throws Exception
      */
-    protected function processChunk(array $chunkToBeInserted): void
+    private function processChunk(array $chunkToBeInserted): void
     {
         try {
             $this->insertChunk($chunkToBeInserted);
@@ -246,8 +242,32 @@ class ImportPostcodes extends Command
      * @return void
      * @throws Exception
      */
-    protected function insertChunk(array $batchData): void
+    private function insertChunk(array $batchData): void
     {
-        //DB::table('postcodes')->insert($batchData);
+        DB::table('postcodes')->insert($batchData);
+    }
+
+    /**
+     * Returns the full storage path for a given file or directory.
+     *
+     * @param string $path
+     * @return string
+     */
+    protected function getStoragePath(string $path): string
+    {
+        return storage_path($path);
+    }
+
+    /**
+     * Asserts that a CSV file is readable.
+     *
+     * @param string $csvFilePath
+     * @throws Exception
+     */
+    private function assertCsvIsReadable(string $csvFilePath): void
+    {
+        if (!is_readable($csvFilePath)) {
+            throw new Exception("Failed to open CSV file: {$csvFilePath}");
+        }
     }
 }
