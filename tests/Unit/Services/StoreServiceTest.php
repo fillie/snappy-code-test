@@ -2,135 +2,100 @@
 
 namespace Tests\Unit\Services;
 
-use App\DTO\NearbyStoreRequestDTO;
-use App\Models\Store;
-use App\Services\PostcodeService;
+use PHPUnit\Framework\MockObject\Exception;
+use Tests\TestCase;
 use App\Services\StoreService;
+use App\Services\PostcodeService;
+use App\Repositories\Contracts\StoreRepositoryInterface;
 use App\DTO\StoreDTO;
-use Illuminate\Support\Collection;
-use PHPUnit\Framework\TestCase;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use App\DTO\NearbyStoreRequestDTO;
+use App\DTO\DeliverableRequestDTO;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class StoreServiceTest extends TestCase
 {
+    /**
+     * @return void
+     * @throws Exception
+     */
     public function testCreateStore()
     {
-        $data = [
+        $storeData = new StoreDTO([
             'name' => 'Test Store',
-            'latitude' => 51.5074,
-            'longitude' => 0.1278,
+            'latitude' => 51.5,
+            'longitude' => -0.12,
             'status' => 'open',
             'type' => 'shop',
-            'max_delivery_distance' => 10.5,
-        ];
-        $dto = new StoreDTO($data);
+            'max_delivery_distance' => 10,
+        ]);
 
-        $storeMock = $this->getMockBuilder(Store::class)
-            ->disableOriginalConstructor()
-            ->addMethods(['create'])
-            ->getMock();
+        $storeRepositoryMock = $this->createMock(StoreRepositoryInterface::class);
+        $postcodeServiceMock = $this->createMock(PostcodeService::class);
 
-        $postcodeServiceMock = $this->getMockBuilder(PostcodeService::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        $expectedStore = (object) $data;
-        $storeMock->expects($this->once())
+        $storeRepositoryMock->expects($this->once())
             ->method('create')
-            ->with([
-                'name' => $dto->name,
-                'latitude' => $dto->latitude,
-                'longitude' => $dto->longitude,
-                'status' => $dto->status,
-                'type' => $dto->type,
-                'max_delivery_distance' => $dto->maxDeliveryDistance,
-            ])
-            ->willReturn($expectedStore);
+            ->with($this->isType('array'))
+            ->willReturn($storeData);
 
-        $storeService = new StoreService($storeMock, $postcodeServiceMock);
-        $result = $storeService->createStore($dto);
-        $this->assertEquals($dto, $result);
+        $service = new StoreService($storeRepositoryMock, $postcodeServiceMock);
+        $result = $service->createStore($storeData);
+
+        $this->assertEquals($storeData->name, $result->name);
     }
 
+    /**
+     * @return void
+     * @throws Exception
+     */
     public function testGetNearbyStores()
     {
-        $data = [
-            'latitude' => 51.5074,
-            'longitude' => 0.1278,
+        $nearbyDTO = new NearbyStoreRequestDTO([
+            'latitude' => 51.5,
+            'longitude' => -0.12,
             'radius' => 10,
-        ];
-        $nearbyDTO = new NearbyStoreRequestDTO($data);
-        $fakeStoreData = [
-            'id' => 1,
-            'name' => 'Nearby Test Store',
-            'latitude' => 51.5075,
-            'longitude' => 0.1280,
+        ]);
+
+        $storeRepositoryMock = $this->createMock(StoreRepositoryInterface::class);
+        $postcodeServiceMock = $this->createMock(PostcodeService::class);
+
+        $expectedCollection = collect([new StoreDTO([
+            'name' => 'Nearby Store',
+            'latitude' => 51.5,
+            'longitude' => -0.12,
             'status' => 'open',
             'type' => 'shop',
-            'max_delivery_distance' => 15,
-            'distance' => 5.0,
-        ];
+            'max_delivery_distance' => 10,
+        ])]);
 
-        // Create a fake store model with a toArray method.
-        $fakeStoreModel = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['toArray'])
-            ->getMock();
-        $fakeStoreModel->expects($this->once())
-            ->method('toArray')
-            ->willReturn($fakeStoreData);
+        $storeRepositoryMock->expects($this->once())
+            ->method('searchWithinBounds')
+            ->willReturn($expectedCollection);
 
-        // Build a query builder mock with the required methods.
-        $queryBuilderMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['whereBetween', 'selectRaw', 'havingRaw', 'orderBy', 'get'])
-            ->getMock();
+        $service = new StoreService($storeRepositoryMock, $postcodeServiceMock);
+        $result = $service->getNearbyStores($nearbyDTO);
 
-        $calls = [];
-        $queryBuilderMock->method('whereBetween')
-            ->willReturnCallback(function ($field, $range) use (&$calls, $queryBuilderMock) {
-                $calls[] = [$field, $range];
-                return $queryBuilderMock;
-            });
-        $queryBuilderMock->expects($this->once())
-            ->method('selectRaw')
-            ->with($this->anything(), $this->anything())
-            ->willReturnSelf();
-        $queryBuilderMock->expects($this->once())
-            ->method('havingRaw')
-            ->with('distance <= max_delivery_distance')
-            ->willReturnSelf();
-        $queryBuilderMock->expects($this->once())
-            ->method('orderBy')
-            ->with('distance', 'asc')
-            ->willReturnSelf();
-        $queryBuilderMock->expects($this->once())
-            ->method('get')
-            ->willReturn(new EloquentCollection([$fakeStoreModel]));
-
-        $storeMock = $this->getMockBuilder(Store::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['newQuery'])
-            ->getMock();
-        $storeMock->expects($this->once())
-            ->method('newQuery')
-            ->willReturn($queryBuilderMock);
-
-        $postcodeServiceMock = $this->getMockBuilder(PostcodeService::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        $storeService = new StoreService($storeMock, $postcodeServiceMock);
-        $result = $storeService->getNearbyStores($nearbyDTO);
-
-        // Verify that whereBetween was called for both 'latitude' and 'longitude'
-        $this->assertCount(2, $calls);
-        $fields = array_column($calls, 0);
-        $this->assertContains('latitude', $fields);
-        $this->assertContains('longitude', $fields);
-
-        $this->assertInstanceOf(Collection::class, $result);
         $this->assertCount(1, $result);
-        $storeDTO = $result->first();
-        $this->assertInstanceOf(StoreDTO::class, $storeDTO);
-        $this->assertEquals($fakeStoreData['name'], $storeDTO->name);
+        $this->assertEquals('Nearby Store', $result->first()->name);
+    }
+
+    /**
+     * @return void
+     * @throws Exception
+     */
+    public function testGetDeliverableStoresThrowsIfPostcodeNotFound()
+    {
+        $storeRepositoryMock = $this->createMock(StoreRepositoryInterface::class);
+        $postcodeServiceMock = $this->createMock(PostcodeService::class);
+
+        $postcodeServiceMock->expects($this->once())
+            ->method('getCoordinatesByPostcode')
+            ->with('INVALID')
+            ->willReturn(null);
+
+        $service = new StoreService($storeRepositoryMock, $postcodeServiceMock);
+
+        $this->expectException(NotFoundHttpException::class);
+
+        $service->getDeliverableStores(new DeliverableRequestDTO(['postcode' => 'INVALID']));
     }
 }
