@@ -2,9 +2,11 @@
 
 namespace Tests\Unit\Services;
 
+use App\DTO\NearbyStoreRequestDTO;
 use App\Models\Store;
 use App\Services\StoreService;
 use App\DTO\StoreDTO;
+use Illuminate\Support\Collection;
 use PHPUnit\Framework\TestCase;
 
 class StoreServiceTest extends TestCase
@@ -19,16 +21,12 @@ class StoreServiceTest extends TestCase
             'type' => 'shop',
             'max_delivery_distance' => 10.5,
         ];
-
         $dto = new StoreDTO($data);
-
         $storeMock = $this->getMockBuilder(Store::class)
             ->disableOriginalConstructor()
             ->addMethods(['create'])
             ->getMock();
-
         $expectedStore = (object) $data;
-
         $storeMock->expects($this->once())
             ->method('create')
             ->with([
@@ -40,10 +38,85 @@ class StoreServiceTest extends TestCase
                 'max_delivery_distance' => $dto->maxDeliveryDistance,
             ])
             ->willReturn($expectedStore);
-
         $storeService = new StoreService($storeMock);
         $result = $storeService->createStore($dto);
-
         $this->assertEquals($dto, $result);
+    }
+
+    public function testGetNearbyStores()
+    {
+        $data = [
+            'latitude' => 51.5074,
+            'longitude' => 0.1278,
+            'radius' => 10,
+        ];
+        $nearbyDTO = new NearbyStoreRequestDTO($data);
+        $fakeStoreData = [
+            'id' => 1,
+            'name' => 'Nearby Test Store',
+            'latitude' => 51.5075,
+            'longitude' => 0.1280,
+            'status' => 'open',
+            'type' => 'shop',
+            'max_delivery_distance' => 15,
+            'distance' => 5.0,
+        ];
+        // Use addMethods for stdClass since toArray doesn't exist by default.
+        $fakeStoreModel = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['toArray'])
+            ->getMock();
+        $fakeStoreModel->expects($this->once())
+            ->method('toArray')
+            ->willReturn($fakeStoreData);
+
+        // Build a query builder mock using stdClass with added methods.
+        $queryBuilderMock = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['whereBetween', 'selectRaw', 'having', 'orderBy', 'get'])
+            ->getMock();
+
+        $calls = [];
+        $queryBuilderMock->method('whereBetween')
+            ->willReturnCallback(function ($field, $range) use (&$calls, $queryBuilderMock) {
+                $calls[] = [$field, $range];
+                return $queryBuilderMock;
+            });
+        $queryBuilderMock->expects($this->once())
+            ->method('selectRaw')
+            ->with($this->anything(), $this->anything())
+            ->willReturnSelf();
+        $queryBuilderMock->expects($this->once())
+            ->method('having')
+            ->with('distance', '<=', $nearbyDTO->radius)
+            ->willReturnSelf();
+        $queryBuilderMock->expects($this->once())
+            ->method('orderBy')
+            ->with('distance', 'asc')
+            ->willReturnSelf();
+        $queryBuilderMock->expects($this->once())
+            ->method('get')
+            ->willReturn(collect([$fakeStoreModel]));
+
+        $storeMock = $this->getMockBuilder(Store::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['newQuery'])
+            ->getMock();
+        $storeMock->expects($this->once())
+            ->method('newQuery')
+            ->willReturn($queryBuilderMock);
+
+        $storeService = new StoreService($storeMock);
+        $result = $storeService->getNearbyStores($nearbyDTO);
+
+        // Verify that whereBetween was called for both 'latitude' and 'longitude'
+        $this->assertCount(2, $calls);
+        $fields = array_column($calls, 0);
+        $this->assertContains('latitude', $fields);
+        $this->assertContains('longitude', $fields);
+
+        $this->assertInstanceOf(Collection::class, $result);
+        $this->assertCount(1, $result);
+        $storeDTO = $result->first();
+        $this->assertInstanceOf(StoreDTO::class, $storeDTO);
+        $this->assertEquals($fakeStoreData['name'], $storeDTO->name);
     }
 }
