@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class StoreDTOTest extends TestCase
 {
-    public function testStoreDTOInitialization()
+    public function testStoreDTOInitialisation()
     {
         $data = [
             'name' => 'Test Store',
