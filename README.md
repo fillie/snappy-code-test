@@ -1,66 +1,111 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Snappy Shopper Technical Test
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+In the task set, I developed a standalone Laravel-based PHP application designed to manage stores, their locations, and relationships with UK postcodes, exposed through a JSON API suitable specifically for integration with mobile applications.
 
-## About Laravel
+Overall, I spent around 5 hours on the task. I could have spent less, but I wanted to make sure it was an accurate reflection of my skillset, and used it as
+an opportunity to try and show off technically. On the other hand, I could have spent longer on the task, and as such I have attached a section to the bottom of the `README.md` with
+thoughts for the future.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Features Implemented
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+-   **Console Command for UK Postcodes Import:**\
+    I implemented an Artisan command to download and import UK postcode data directly into the database. I chose to use Laravel's built-in chunking methods to handle large datasets effectively, intentionally avoiding third-party dependencies to keep the solution straightforward and maintainable.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+  
+- **Store Creation Endpoint:**\
+    I structured this clearly through multiple layers:
 
-## Learning Laravel
+    -   **DTOs** (Data Transfer Objects) to ensure clear and structured data flow.
+    -   **Form Requests** to provide robust input validation.
+    -   **Service Layer** to encapsulate the core business logic in one easily testable place.
+    -   **Repository Pattern** to abstract and isolate database interactions.
+    -   **Controller Actions** to coordinate these components, handle exceptions gracefully, and log errors through injected, PSR-compliant logging.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+  
+- **Endpoints for Nearby and Deliverable Stores:**\
+    Included advanced geographic querying capabilities by first calculating a bounding box for efficiency, followed by precise distance calculations using the Haversine formula.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+  
+- **Repositories:**\
+    I deliberately introduced the repository pattern because:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+    -   It provided clear separation between data persistence and business logic.
+    -   It made unit testing easier by isolating data access.
+    -   It enhanced maintainability, making future modifications or database migrations easier to manage.
 
-## Laravel Sponsors
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+  - **Dedicated API Routes File:**\
+    I created a specific `api.php` routes file separate from Laravel's default `web.php` file. I found this significantly improved clarity, ensuring the API endpoints are logically organized and easy to locate.
 
-### Premium Partners
+## Testing Approach
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+-   **Unit Tests:**\
+    I focused primarily on the service and repository layers, carefully mocking Laravel's Eloquent queries to isolate and rigorously test complex business logic and database interactions.
 
-## Contributing
+  
+- **Feature Tests:**\
+    I wrote integration tests that simulate realistic HTTP interactions, ensuring endpoint correctness, validation accuracy, and proper response structures.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+  
+- **Choice of Local Database:**\
+    For tests, I opted for an SQLite in-memory database to achieve rapid execution. However, I recognized that in a production environment, using PostgreSQL (with PostGIS) or MySQL (with GIS extensions) would significantly enhance the capability and performance of geographic queries.
 
-## Code of Conduct
+## Reflections & Rationale on My Approach
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+-   **Simplicity:**\
+    I consciously avoided unnecessary complexity by relying solely on Laravel's built-in capabilities. My aim was to keep the solution clean, readable, and straightforward, making it easy for future maintainers to understand and build upon.
 
-## Security Vulnerabilities
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- **Maintainability:**\
+    By clearly structuring the app into layers---DTOs, form requests, repositories, services, and controllers---I made it easier to test, modify, and extend each component independently, significantly enhancing long-term maintainability.
 
-## License
+  
+- **Correctness:**\
+    Throughout development, I consistently validated data rigorously and implemented careful error handling. My use of geographic calculations (bounding-box and Haversine formula) was thoroughly tested and verified through unit and feature tests, giving me confidence in the application's accuracy.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+  
+- **Technology Choices:**\
+    I deliberately chose not to introduce any third-party packages beyond what Laravel provides out-of-the-box. This decision simplified dependency management and reduced future maintenance overhead.
+
+  
+- **Performance:**\
+    For data imports, I utilized chunking to process large CSV datasets efficiently. Geographic queries were optimized using bounding boxes to limit the number of records evaluated before performing detailed calculations. For future iterations, I acknowledged that using specialized GIS database extensions would offer additional performance improvements.
+
+  
+- **Documentation:**\
+    I provided clear and informative comments, named methods and variables intuitively, and structured PHPDoc annotations thoughtfully, enhancing readability and maintainability for myself and future developers.
+
+  
+- **Security:**\
+    I ensured all API endpoints required authentication through Laravel Sanctum, implemented robust validation to protect against malicious inputs, and avoided leaking sensitive error information to end-users, logging detailed information internally instead.
+
+## Considerations for Future Improvements (Constrained by Time)
+
+Given additional time, there are several areas I would revisit or enhance further:
+
+-   **Postcode Validation:**\
+    Implement robust postcode validation rules, possibly using dedicated Laravel validation packages or external services designed specifically for validating UK postcodes.
+
+  
+- **Latitude/Longitude Validation:**\
+    Ensure precise validation of latitude and longitude data to prevent invalid or out-of-range values from entering the database.
+
+  
+- **Historical Postcode Handling:**\
+    Decide whether to retain historical postcode information during imports, and determine how best to version or manage changes to postcode data over time.
+
+  
+- **Enhanced Console Experience:**\
+    Consider third-party console enhancement packages to make command-line interactions visually clearer, particularly beneficial when importing or processing large datasets.
+
+  
+- **CSV Handling with League/CSV:**\
+    Although my current built-in approach worked well, I'd consider evaluating dedicated CSV parsing libraries (like `league/csv`) for potentially increased robustness or performance benefits in a production scenario.
+
+  
+- **GIS Database Support:**\
+    Implement and evaluate PostgreSQL with PostGIS or MySQL GIS extensions in production environments for better geographic query performance and functionality.
+
+  
+- **Comprehensive API Documentation:**\
+    Introduce detailed API documentation (such as Swagger/OpenAPI) to improve integration experiences and clearly communicate API capabilities.
