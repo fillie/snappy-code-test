@@ -2,34 +2,29 @@
 
 namespace App\Services;
 
-use App\Models\Postcode;
+use App\Repositories\Contracts\PostcodeRepositoryInterface;
 
 class PostcodeService
 {
-    protected Postcode $postcode;
+    /**
+     * @var PostcodeRepositoryInterface
+     */
+    protected PostcodeRepositoryInterface $repository;
 
-    public function __construct(Postcode $postcode)
+    /**
+     * @param PostcodeRepositoryInterface $repository
+     */
+    public function __construct(PostcodeRepositoryInterface $repository)
     {
-        $this->postcode = $postcode;
+        $this->repository = $repository;
     }
 
     /**
-     * Get the coordinates for a given postcode.
-     *
      * @param string $postcode
-     * @return array|null Returns an array with keys 'latitude' and 'longitude' or null if not found.
+     * @return array|null
      */
     public function getCoordinatesByPostcode(string $postcode): ?array
     {
-        $record = $this->postcode->where('postcode', $postcode)->first();
-
-        if (!$record) {
-            return null;
-        }
-
-        return [
-            'latitude'  => $record->latitude,
-            'longitude' => $record->longitude,
-        ];
+        return $this->repository->findCoordinatesByPostcode($postcode);
     }
 }
