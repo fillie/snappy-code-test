@@ -2,7 +2,7 @@
 
 namespace App\DTO;
 
-class DeliverableDTO
+class DeliverableRequestDTO
 {
     public string $postcode;
 
