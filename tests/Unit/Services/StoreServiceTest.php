@@ -4,10 +4,12 @@ namespace Tests\Unit\Services;
 
 use App\DTO\NearbyStoreRequestDTO;
 use App\Models\Store;
+use App\Services\PostcodeService;
 use App\Services\StoreService;
 use App\DTO\StoreDTO;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\TestCase;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class StoreServiceTest extends TestCase
 {
@@ -22,10 +24,16 @@ class StoreServiceTest extends TestCase
             'max_delivery_distance' => 10.5,
         ];
         $dto = new StoreDTO($data);
+
         $storeMock = $this->getMockBuilder(Store::class)
             ->disableOriginalConstructor()
             ->addMethods(['create'])
             ->getMock();
+
+        $postcodeServiceMock = $this->getMockBuilder(PostcodeService::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
         $expectedStore = (object) $data;
         $storeMock->expects($this->once())
             ->method('create')
@@ -38,7 +46,8 @@ class StoreServiceTest extends TestCase
                 'max_delivery_distance' => $dto->maxDeliveryDistance,
             ])
             ->willReturn($expectedStore);
-        $storeService = new StoreService($storeMock);
+
+        $storeService = new StoreService($storeMock, $postcodeServiceMock);
         $result = $storeService->createStore($dto);
         $this->assertEquals($dto, $result);
     }
@@ -61,7 +70,8 @@ class StoreServiceTest extends TestCase
             'max_delivery_distance' => 15,
             'distance' => 5.0,
         ];
-        // Use addMethods for stdClass since toArray doesn't exist by default.
+
+        // Create a fake store model with a toArray method.
         $fakeStoreModel = $this->getMockBuilder(\stdClass::class)
             ->addMethods(['toArray'])
             ->getMock();
@@ -69,9 +79,9 @@ class StoreServiceTest extends TestCase
             ->method('toArray')
             ->willReturn($fakeStoreData);
 
-        // Build a query builder mock using stdClass with added methods.
+        // Build a query builder mock with the required methods.
         $queryBuilderMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['whereBetween', 'selectRaw', 'having', 'orderBy', 'get'])
+            ->addMethods(['whereBetween', 'selectRaw', 'havingRaw', 'orderBy', 'get'])
             ->getMock();
 
         $calls = [];
@@ -85,8 +95,8 @@ class StoreServiceTest extends TestCase
             ->with($this->anything(), $this->anything())
             ->willReturnSelf();
         $queryBuilderMock->expects($this->once())
-            ->method('having')
-            ->with('distance', '<=', $nearbyDTO->radius)
+            ->method('havingRaw')
+            ->with('distance <= max_delivery_distance')
             ->willReturnSelf();
         $queryBuilderMock->expects($this->once())
             ->method('orderBy')
@@ -94,7 +104,7 @@ class StoreServiceTest extends TestCase
             ->willReturnSelf();
         $queryBuilderMock->expects($this->once())
             ->method('get')
-            ->willReturn(collect([$fakeStoreModel]));
+            ->willReturn(new EloquentCollection([$fakeStoreModel]));
 
         $storeMock = $this->getMockBuilder(Store::class)
             ->disableOriginalConstructor()
@@ -104,7 +114,11 @@ class StoreServiceTest extends TestCase
             ->method('newQuery')
             ->willReturn($queryBuilderMock);
 
-        $storeService = new StoreService($storeMock);
+        $postcodeServiceMock = $this->getMockBuilder(PostcodeService::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $storeService = new StoreService($storeMock, $postcodeServiceMock);
         $result = $storeService->getNearbyStores($nearbyDTO);
 
         // Verify that whereBetween was called for both 'latitude' and 'longitude'
