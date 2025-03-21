@@ -3,6 +3,8 @@
 namespace Tests\Feature\Controllers;
 
 use App\DTO\StoreDTO;
+use App\Enums\StoreStatus;
+use App\Enums\StoreType;
 use App\Models\User;
 use App\Services\StoreService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,8 +27,8 @@ class StoreControllerTest extends TestCase
             'name' => 'Test Store',
             'latitude' => 51.5074,
             'longitude' => 0.1278,
-            'status' => 'open',
-            'type' => 'shop',
+            'status' => StoreStatus::OPEN->value,
+            'type' => StoreType::SHOP->value,
             'max_delivery_distance' => 10.5
         ];
 
@@ -46,7 +48,14 @@ class StoreControllerTest extends TestCase
         $response = $this->postJson('/api/stores', $data);
 
         $response->assertStatus(201);
-        $response->assertJson((array) $storeDTO);
+        $response->assertJson([
+            'name' => $storeDTO->name,
+            'latitude' => $storeDTO->latitude,
+            'longitude' => $storeDTO->longitude,
+            'status' => $storeDTO->status->value,
+            'type' => $storeDTO->type->value,
+            'max_delivery_distance' => $storeDTO->maxDeliveryDistance,
+        ]);
     }
 
     /**
@@ -59,8 +68,8 @@ class StoreControllerTest extends TestCase
             'name' => 'Test Store',
             'latitude' => 51.5074,
             'longitude' => 0.1278,
-            'status' => 'open',
-            'type' => 'shop',
+            'status' => StoreStatus::OPEN->value,
+            'type' => StoreType::SHOP->value,
             'max_delivery_distance' => 10.5
         ];
 
@@ -97,14 +106,14 @@ class StoreControllerTest extends TestCase
             'radius' => 10
         ];
 
-        $fakeNearbyStoreDTO = new StoreDTO([
+        $fakeNearbyStoreDTO = [
             'name' => 'Nearby Store',
-            'latitude' => 51.5075,
-            'longitude' => 0.1279,
-            'status' => 'open',
-            'type' => 'shop',
-            'max_delivery_distance' => 12
-        ]);
+            'latitude' => 51.5074,
+            'longitude' => 0.1278,
+            'status' => StoreStatus::OPEN->value,
+            'type' => StoreType::SHOP->value,
+            'max_delivery_distance' => 10.5
+        ];
 
         $expectedResult = [ (array) $fakeNearbyStoreDTO ];
 
@@ -170,16 +179,16 @@ class StoreControllerTest extends TestCase
             'postcode' => 'SW1A 1AA'
         ];
 
-        $fakeDeliverableStoreDTO = new StoreDTO([
+        $fakeDeliverableStoreDTO = [
             'name' => 'Deliverable Store',
-            'latitude' => 51.5014,
-            'longitude' => -0.1419,
-            'status' => 'open',
-            'type' => 'restaurant',
-            'max_delivery_distance' => 15
-        ]);
+            'latitude' => 51.5074,
+            'longitude' => 0.1278,
+            'status' => StoreStatus::OPEN->value,
+            'type' => StoreType::SHOP->value,
+            'max_delivery_distance' => 10.5
+        ];
 
-        $expectedResult = [(array) $fakeDeliverableStoreDTO];
+        $expectedResult = [$fakeDeliverableStoreDTO];
 
         $storeServiceMock = $this->createMock(StoreService::class);
         $storeServiceMock->method('getDeliverableStores')

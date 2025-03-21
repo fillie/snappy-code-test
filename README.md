@@ -20,6 +20,7 @@ thoughts for the future.
     -   **Service Layer** to encapsulate the core business logic in one easily testable place.
     -   **Repository Pattern** to abstract and isolate database interactions.
     -   **Controller Actions** to coordinate these components, handle exceptions gracefully, and log errors through injected, PSR-compliant logging.
+    -   **Endpoint Transformer** to transform our DTO to our desired endpoint shape, using Laravel resource.
 
   
 - **Endpoints for Nearby and Deliverable Stores:**\
