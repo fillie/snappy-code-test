@@ -84,7 +84,9 @@ class ImportPostcodes extends Command
         $response = $this->fetchCsvFile($this->postcodeUrlToImport);
         $zipFilePath = $this->saveCsvFile($response);
         $csvFilePath = $this->unzipFile($zipFilePath);
+
         $this->processCsvFile($csvFilePath);
+        $this->removeCSVFile($zipFilePath, $csvFilePath);
     }
 
     /**
@@ -217,6 +219,33 @@ class ImportPostcodes extends Command
         $this->output->progressFinish();
         $this->info("Import complete, processed {$currentRow} rows.");
     }
+
+    /**
+     * Responsible for removing both the ZIP file and the extracted CSV file.
+     *
+     * @param string $zipFilePath
+     * @param string $csvFilePath
+     * @throws Exception
+     */
+    private function removeCSVFile(string $zipFilePath, string $csvFilePath): void
+    {
+        $this->info("Cleaning up downloaded file.");
+
+        if ($this->filesystem->exists($zipFilePath)) {
+            $this->filesystem->delete($zipFilePath);
+            $this->info("Deleted ZIP file: {$zipFilePath}");
+        } else {
+            $this->warn("ZIP file not found for deletion: {$zipFilePath}");
+        }
+
+        if ($this->filesystem->exists($csvFilePath)) {
+            $this->filesystem->delete($csvFilePath);
+            $this->info("Deleted CSV file: {$csvFilePath}");
+        } else {
+            $this->warn("CSV file not found for deletion: {$csvFilePath}");
+        }
+    }
+
 
     /**
      * Responsible for error handling and rolling back the transaction should an insert fail.
