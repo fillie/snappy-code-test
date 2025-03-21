@@ -3,6 +3,8 @@
 namespace Tests\Unit\DTO;
 
 use App\DTO\StoreDTO;
+use App\Enums\StoreStatus;
+use App\Enums\StoreType;
 use PHPUnit\Framework\TestCase;
 
 class StoreDTOTest extends TestCase
@@ -23,8 +25,8 @@ class StoreDTOTest extends TestCase
         $this->assertEquals('Test Store', $dto->name);
         $this->assertEquals(51.5074, $dto->latitude);
         $this->assertEquals(0.1278, $dto->longitude);
-        $this->assertEquals('open', $dto->status);
-        $this->assertEquals('shop', $dto->type);
+        $this->assertEquals(StoreStatus::OPEN, $dto->status);
+        $this->assertEquals(StoreType::SHOP, $dto->type);
         $this->assertEquals(10.5, $dto->maxDeliveryDistance);
     }
 }

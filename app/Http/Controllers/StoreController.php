@@ -7,6 +7,7 @@ use App\DTO\NearbyStoreRequestDTO;
 use App\Http\Requests\CreateStore;
 use App\Http\Requests\Deliverable;
 use App\Http\Requests\NearbyStore;
+use App\Http\Resources\StoreResource;
 use App\Services\StoreService;
 use App\DTO\StoreDTO;
 use Illuminate\Http\Client\HttpClientException;
@@ -48,7 +49,7 @@ class StoreController extends Controller
             ], 500);
         }
 
-        return response()->json($store, 201);
+        return response()->json(new StoreResource($store), 201);
     }
 
     /**
