@@ -2,14 +2,16 @@
 
 namespace App\DTO;
 
+use App\Enums\StoreStatus;
+use App\Enums\StoreType;
+
 class StoreDTO
 {
     public string $name;
     public float $latitude;
     public float $longitude;
-    public string $status;
-    // todo make enum?
-    public string $type;
+    public StoreStatus $status;
+    public StoreType $type;
     public float $maxDeliveryDistance;
 
     /**
@@ -22,8 +24,8 @@ class StoreDTO
         $this->name = $data['name'];
         $this->latitude = (float) $data['latitude'];
         $this->longitude = (float) $data['longitude'];
-        $this->status = $data['status'];
-        $this->type = $data['type'];
+        $this->status = StoreStatus::from($data['status']);
+        $this->type = StoreType::from($data['type']);
         $this->maxDeliveryDistance = (float) $data['max_delivery_distance'];
     }
 }
