@@ -8,6 +8,7 @@ use GuzzleHttp\Psr7\Response;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\MockObject\Exception;
+use ReflectionException;
 use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Illuminate\Console\OutputStyle;
@@ -115,7 +116,7 @@ class ImportPostcodesTest extends TestCase
      *
      * @return void
      * @throws Exception
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public function testUnzipFileSucceeds()
     {
@@ -273,5 +274,24 @@ class ImportPostcodesTest extends TestCase
         if (is_dir($tempDir)) {
             @rmdir($tempDir);
         }
+    }
+
+    /**
+     * @throws ReflectionException
+     * @throws Exception
+     */
+    public function testRemoveCsvFile()
+    {
+        $filesystem = $this->createMock(Filesystem::class);
+        $filesystem->expects($this->exactly(2))->method('exists')->willReturn(true);
+        $filesystem->expects($this->exactly(2))->method('delete')->willReturn(true);
+
+        $clientMock = $this->createMock(Client::class);
+        $command = new ImportPostcodes($clientMock, $filesystem, 'dummy_url', 'path/to/file.zip', 'file.csv');
+        $this->setCommandOutput($command);
+
+        $reflection = new \ReflectionClass($command);
+        $method = $reflection->getMethod('removeCSVFile');
+        $method->invoke($command, 'path/to/file.zip', 'path/to/file.csv');
     }
 }
