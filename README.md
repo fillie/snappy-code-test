@@ -17,6 +17,7 @@ thoughts for the future.
 
     -   **DTOs** (Data Transfer Objects) to ensure clear and structured data flow.
     -   **Form Requests** to provide robust input validation.
+    -   **Enums** Enforce type hinting and maintain a central location for values.
     -   **Service Layer** to encapsulate the core business logic in one easily testable place.
     -   **Repository Pattern** to abstract and isolate database interactions.
     -   **Controller Actions** to coordinate these components, handle exceptions gracefully, and log errors through injected, PSR-compliant logging.
@@ -58,7 +59,7 @@ thoughts for the future.
 
 
 - **Maintainability:**\
-    By clearly structuring the app into layers---DTOs, form requests, repositories, services, and controllers---I made it easier to test, modify, and extend each component independently, significantly enhancing long-term maintainability.
+    By clearly structuring the app into layers, DTOs, form requests, repositories, services, and controllers. I made it easier to test, modify, and extend each component independently, significantly enhancing long-term maintainability.
 
   
 - **Correctness:**\
