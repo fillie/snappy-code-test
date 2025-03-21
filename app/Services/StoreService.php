@@ -22,8 +22,8 @@ class StoreService
      */
     protected PostcodeService $postcodeService;
 
-    const DEFAULT_RADIUS = 10;
-    const EARTH_RADIUS = 6371;
+    public const DEFAULT_RADIUS = 10;
+    public const EARTH_RADIUS = 6371;
 
     /**
      * @param StoreRepositoryInterface $storeRepository
