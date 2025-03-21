@@ -3,6 +3,7 @@
 namespace Tests\Unit\Console;
 
 use App\Console\Commands\ImportPostcodes;
+use App\Repositories\Contracts\PostcodeRepositoryInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Filesystem\Filesystem;
@@ -36,7 +37,16 @@ class ImportPostcodesTest extends TestCase
     {
         $client = $this->createMock(Client::class);
         $filesystem = $this->createMock(Filesystem::class);
-        $command = new ImportPostcodes($client, $filesystem, '', 'temp/dummy.zip', 'postcodes.csv');
+        $postcodeRepositoryMock = $this->createMock(PostcodeRepositoryInterface::class);
+
+        $command = new ImportPostcodes(
+            $client,
+            $filesystem,
+            $postcodeRepositoryMock,
+            '',
+            'temp/dummy.zip',
+            'postcodes.csv'
+        );
         $this->setCommandOutput($command);
 
         $result = $command->handle();
@@ -50,6 +60,7 @@ class ImportPostcodesTest extends TestCase
     public function testHandleFailsWhenFetchCsvFileFails()
     {
         $badResponse = new Response(404, [], 'Not Found');
+        $postcodeRepositoryMock = $this->createMock(PostcodeRepositoryInterface::class);
         $client = $this->createMock(Client::class);
         $client->expects($this->once())
             ->method('get')
@@ -59,6 +70,7 @@ class ImportPostcodesTest extends TestCase
         $command = new ImportPostcodes(
             $client,
             $filesystem,
+            $postcodeRepositoryMock,
             'http://example.com/postcodes.zip',
             'temp/dummy.zip',
             'postcodes.csv'
@@ -76,6 +88,7 @@ class ImportPostcodesTest extends TestCase
     public function testHandleFailsWhenSaveCsvFileFails()
     {
         $goodResponse = new Response(200, [], 'dummy zip content');
+        $postcodeRepositoryMock = $this->createMock(PostcodeRepositoryInterface::class);
         $client = $this->createMock(Client::class);
         $client->expects($this->once())
             ->method('get')
@@ -101,6 +114,7 @@ class ImportPostcodesTest extends TestCase
         $command = new ImportPostcodes(
             $client,
             $filesystem,
+            $postcodeRepositoryMock,
             'http://example.com/postcodes.zip',
             $testPath,
             'postcodes.csv'
@@ -141,12 +155,14 @@ class ImportPostcodesTest extends TestCase
         $filesystem = new Filesystem();
         // Create a dummy HTTP client (won't be used in this test).
         $clientMock = $this->createMock(Client::class);
+        $postcodeRepositoryMock = $this->createMock(PostcodeRepositoryInterface::class);
 
         // Instantiate the command using our zip file as the local file path.
         $command = $this->getMockBuilder(ImportPostcodes::class)
             ->setConstructorArgs([
                 $clientMock,
                 $filesystem,
+                $postcodeRepositoryMock,
                 'dummy_url',
                 $zipFilePath,
                 $csvFilename,
@@ -231,11 +247,14 @@ class ImportPostcodesTest extends TestCase
         $postcodeLocalFilePath = $zipFilePath;
         $postcodeFilename = $csvFilename;
 
+        $postcodeRepositoryMock = $this->createMock(PostcodeRepositoryInterface::class);
+
         // Create a partial mock of ImportPostcodes overriding getStoragePath().
         $command = $this->getMockBuilder(ImportPostcodes::class)
             ->setConstructorArgs([
                 $client,
                 $filesystem,
+                $postcodeRepositoryMock,
                 'http://example.com/postcodes.zip',
                 $postcodeLocalFilePath,
                 $postcodeFilename,
@@ -253,12 +272,12 @@ class ImportPostcodesTest extends TestCase
         // Stub out DB calls.
         DB::shouldReceive('beginTransaction')->once();
         DB::shouldReceive('commit')->once();
-        DB::shouldReceive('table')
-            ->with('postcodes')
-            ->andReturnSelf();
-        DB::shouldReceive('insert')
-            ->once()
-            ->andReturn(true);
+
+        $postcodeRepositoryMock->expects($this->once())
+            ->method('insert')
+            ->with([
+                ['postcode' => 'AB1', 'latitude' => '1.0', 'longitude' => '2.0'],
+            ]);
 
         $result = $command->handle();
         $this->assertSame(0, $result);
@@ -287,7 +306,15 @@ class ImportPostcodesTest extends TestCase
         $filesystem->expects($this->exactly(2))->method('delete')->willReturn(true);
 
         $clientMock = $this->createMock(Client::class);
-        $command = new ImportPostcodes($clientMock, $filesystem, 'dummy_url', 'path/to/file.zip', 'file.csv');
+        $postcodeRepositoryMock = $this->createMock(PostcodeRepositoryInterface::class);
+        $command = new ImportPostcodes(
+            $clientMock,
+            $filesystem,
+            $postcodeRepositoryMock,
+            'dummy_url',
+            'path/to/file.zip',
+            'file.csv'
+        );
         $this->setCommandOutput($command);
 
         $reflection = new \ReflectionClass($command);
