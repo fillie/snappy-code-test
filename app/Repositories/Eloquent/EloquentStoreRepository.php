@@ -55,6 +55,6 @@ class EloquentStoreRepository implements StoreRepositoryInterface
             ->orderBy('distance', 'asc')
             ->get();
 
-        return $results->map(fn($store) => new StoreDTO($store->toArray()));
+        return $results->map(fn ($store) => new StoreDTO($store->toArray()));
     }
 }

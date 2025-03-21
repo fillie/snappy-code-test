@@ -151,7 +151,7 @@ class ImportPostcodes extends Command
     {
         $this->info("Attempting to extract file.");
 
-        $zip = new ZipArchive;
+        $zip = new ZipArchive();
         if (!$zip->open($zipFilePath)) {
             throw new Exception("Failed to open zip file: {$zipFilePath}");
         }
