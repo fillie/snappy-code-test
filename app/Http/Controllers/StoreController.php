@@ -82,13 +82,11 @@ class StoreController extends Controller
     {
         try {
             $result = $this->storeService->getDeliverableStores(new DeliverableRequestDTO($request->all()));
-        }
-        catch (HttpClientException) {
+        } catch (HttpClientException) {
             return response()->json([
                 'error' => 'No record was found for the given postcode.'
             ], 404);
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Error searching stores for postcode: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'error' => 'An error occurred while searching stores for given postcode.'

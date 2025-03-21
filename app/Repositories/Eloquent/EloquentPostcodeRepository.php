@@ -2,7 +2,6 @@
 
 namespace App\Repositories\Eloquent;
 
-use App\DTO\StoreDTO;
 use App\Models\Postcode;
 use App\Repositories\Contracts\PostcodeRepositoryInterface;
 
