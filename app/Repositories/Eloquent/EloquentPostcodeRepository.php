@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Eloquent;
 
+use App\DTO\StoreDTO;
 use App\Models\Postcode;
 use App\Repositories\Contracts\PostcodeRepositoryInterface;
 
@@ -18,6 +19,15 @@ class EloquentPostcodeRepository implements PostcodeRepositoryInterface
     public function __construct(Postcode $model)
     {
         $this->model = $model;
+    }
+
+    /**
+     * @param array $chunk
+     * @return void
+     */
+    public function insert(array $chunk): void
+    {
+        $this->model->insert($chunk);
     }
 
     /**
