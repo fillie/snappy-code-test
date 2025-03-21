@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Repositories\Contracts\PostcodeRepositoryInterface;
+use App\Repositories\Eloquent\EloquentPostcodeRepository;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Response;
@@ -19,6 +21,7 @@ class ImportPostcodes extends Command
     private string $postcodeFilename;
     private Client $httpClient;
     private Filesystem $filesystem;
+    private PostcodeRepositoryInterface $postcodeRepository;
 
     private const CHUNK_SIZE = 500;
 
@@ -39,12 +42,14 @@ class ImportPostcodes extends Command
     public function __construct(
         Client $httpClient,
         Filesystem $filesystem,
+        PostcodeRepositoryInterface $postcodeRepository,
         ?string $postcodeUrlToImport = null,
         ?string $postcodeLocalFilePath = null,
         ?string $postcodeFilename = null
     ) {
         $this->httpClient = $httpClient;
         $this->filesystem = $filesystem;
+        $this->postcodeRepository = $postcodeRepository;
 
         // Use the injected values or fall back to the config() helper.
         $this->postcodeUrlToImport = $postcodeUrlToImport ?? config('console.postcode_url_to_import');
@@ -273,7 +278,7 @@ class ImportPostcodes extends Command
      */
     private function insertChunk(array $batchData): void
     {
-        DB::table('postcodes')->insert($batchData);
+        $this->postcodeRepository->insert($batchData);
     }
 
     /**
