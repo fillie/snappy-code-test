@@ -11,16 +11,14 @@ class StoreDTOTest extends TestCase
 {
     public function testStoreDTOInitialisation()
     {
-        $data = [
-            'name' => 'Test Store',
-            'latitude' => '51.5074',
-            'longitude' => 0.1278,
-            'status' => 'open',
-            'type' => 'shop',
-            'max_delivery_distance' => '10.5',
-        ];
-
-        $dto = new StoreDTO($data);
+        $dto = new StoreDTO(
+            name: 'Test Store',
+            latitude: 51.5074,
+            longitude: 0.1278,
+            status: StoreStatus::OPEN,
+            type: StoreType::SHOP,
+            maxDeliveryDistance: 10.5
+        );
 
         $this->assertEquals('Test Store', $dto->name);
         $this->assertEquals(51.5074, $dto->latitude);

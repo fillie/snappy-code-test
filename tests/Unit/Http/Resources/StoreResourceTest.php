@@ -16,15 +16,14 @@ class StoreResourceTest extends TestCase
      */
     public function testStoreResourceTransformsDtoCorrectly()
     {
-        $dto = new StoreDTO([
-            'name' => 'Test Store',
-            'latitude' => 51.5074,
-            'longitude' => -0.1278,
-            'status' => StoreStatus::OPEN->value,
-            'type' => StoreType::SHOP->value,
-            'max_delivery_distance' => 15.5,
-        ]);
-
+        $dto = new StoreDTO(
+            name: 'Test Store',
+            latitude: 51.5074,
+            longitude: -0.1278,
+            status: StoreStatus::OPEN,
+            type: StoreType::SHOP,
+            maxDeliveryDistance: 15.5
+        );
         $resource = new StoreResource($dto);
 
         $expected = [

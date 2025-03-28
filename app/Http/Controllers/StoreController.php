@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\DTO\DeliverableRequestDTO;
 use App\DTO\NearbyStoreRequestDTO;
+use App\Enums\StoreStatus;
+use App\Enums\StoreType;
 use App\Http\Requests\CreateStore;
 use App\Http\Requests\Deliverable;
 use App\Http\Requests\NearbyStore;
@@ -41,7 +43,14 @@ class StoreController extends Controller
     public function store(CreateStore $request): JsonResponse
     {
         try {
-            $store = $this->storeService->createStore(new StoreDTO($request->all()));
+            $store = $this->storeService->createStore(new StoreDTO(
+                name: $request->input('name'),
+                latitude: (float) $request->input('latitude'),
+                longitude: (float) $request->input('longitude'),
+                status: StoreStatus::from($request->input('status')),
+                type: StoreType::from($request->input('type')),
+                maxDeliveryDistance: (float) $request->input('max_delivery_distance'),
+            ));
         } catch (Exception $e) {
             $this->logger->error('Error creating store: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([

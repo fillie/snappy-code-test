@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services;
 
+use App\Enums\StoreStatus;
+use App\Enums\StoreType;
 use PHPUnit\Framework\MockObject\Exception;
 use Tests\TestCase;
 use App\Services\StoreService;
@@ -20,27 +22,26 @@ class StoreServiceTest extends TestCase
      */
     public function testCreateStore()
     {
-        $storeData = new StoreDTO([
-            'name' => 'Test Store',
-            'latitude' => 51.5,
-            'longitude' => -0.12,
-            'status' => 'open',
-            'type' => 'shop',
-            'max_delivery_distance' => 10,
-        ]);
-
+        $storeDTO = new StoreDTO(
+            name: 'Test Store',
+            latitude: 51.5074,
+            longitude: 0.1278,
+            status: StoreStatus::OPEN,
+            type: StoreType::SHOP,
+            maxDeliveryDistance: 10.5
+        );
         $storeRepositoryMock = $this->createMock(StoreRepositoryInterface::class);
         $postcodeServiceMock = $this->createMock(PostcodeService::class);
 
         $storeRepositoryMock->expects($this->once())
             ->method('create')
             ->with($this->isType('array'))
-            ->willReturn($storeData);
+            ->willReturn($storeDTO);
 
         $service = new StoreService($storeRepositoryMock, $postcodeServiceMock);
-        $result = $service->createStore($storeData);
+        $result = $service->createStore($storeDTO);
 
-        $this->assertEquals($storeData->name, $result->name);
+        $this->assertEquals($storeDTO->name, $result->name);
     }
 
     /**
@@ -58,14 +59,14 @@ class StoreServiceTest extends TestCase
         $storeRepositoryMock = $this->createMock(StoreRepositoryInterface::class);
         $postcodeServiceMock = $this->createMock(PostcodeService::class);
 
-        $expectedCollection = collect([new StoreDTO([
-            'name' => 'Nearby Store',
-            'latitude' => 51.5,
-            'longitude' => -0.12,
-            'status' => 'open',
-            'type' => 'shop',
-            'max_delivery_distance' => 10,
-        ])]);
+        $expectedCollection = collect([new StoreDTO(
+            name: 'Nearby Store',
+            latitude: '51.5',
+            longitude: '-0.12',
+            status: StoreStatus::OPEN,
+            type: StoreType::SHOP,
+            maxDeliveryDistance: 10,
+        )]);
 
         $storeRepositoryMock->expects($this->once())
             ->method('searchWithinBounds')
