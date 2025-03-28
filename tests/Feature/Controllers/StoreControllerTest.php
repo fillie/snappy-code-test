@@ -25,9 +25,9 @@ class StoreControllerTest extends TestCase
             'longitude' => 0.1278,
             'status' => StoreStatus::OPEN->value,
             'type' => StoreType::SHOP->value,
-            'max_delivery_distance' => 10.5
+            'max_delivery_distance' => 10.5,
         ];
-        
+
         $storeDTO = new StoreDTO(
             $data['name'],
             $data['latitude'],
@@ -69,7 +69,7 @@ class StoreControllerTest extends TestCase
             'longitude' => 0.1278,
             'status' => StoreStatus::OPEN->value,
             'type' => StoreType::SHOP->value,
-            'max_delivery_distance' => 10.5
+            'max_delivery_distance' => 10.5,
         ];
 
         $storeServiceMock = $this->createMock(StoreService::class);
@@ -98,10 +98,9 @@ class StoreControllerTest extends TestCase
         $data = [
             'latitude' => 51.5074,
             'longitude' => 0.1278,
-            'radius' => 10
+            'radius' => 10,
         ];
 
-        // Create a fake StoreDTO instance using explicit parameters:
         $fakeNearbyStoreDTO = new StoreDTO(
             'Nearby Store',
             51.5074,
@@ -132,7 +131,7 @@ class StoreControllerTest extends TestCase
             'longitude' => 0.1278,
             'status' => StoreStatus::OPEN->value,
             'type' => StoreType::SHOP->value,
-            'max_delivery_distance' => 10.5
+            'max_delivery_distance' => 10.5,
         ]);
     }
 
@@ -141,7 +140,7 @@ class StoreControllerTest extends TestCase
         $data = [
             'latitude' => 51.5074,
             'longitude' => 0.1278,
-            'radius' => 10
+            'radius' => 10,
         ];
 
         $storeServiceMock = $this->createMock(StoreService::class);
@@ -169,7 +168,7 @@ class StoreControllerTest extends TestCase
     public function testDeliverableSuccess()
     {
         $data = [
-            'postcode' => 'SW1A 1AA'
+            'postcode' => 'SW1A 1AA',
         ];
 
         $fakeDeliverableStoreDTO = new StoreDTO(
@@ -202,14 +201,14 @@ class StoreControllerTest extends TestCase
             'longitude' => 0.1278,
             'status' => StoreStatus::OPEN->value,
             'type' => StoreType::SHOP->value,
-            'max_delivery_distance' => 10.5
+            'max_delivery_distance' => 10.5,
         ]);
     }
 
     public function testDeliverableFailure()
     {
         $data = [
-            'postcode' => 'SW1A1AA'
+            'postcode' => 'SW1A1AA',
         ];
 
         $storeServiceMock = $this->createMock(StoreService::class);

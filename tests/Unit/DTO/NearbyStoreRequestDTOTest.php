@@ -15,7 +15,11 @@ class NearbyStoreRequestDTOTest extends TestCase
             'radius' => 5,
         ];
 
-        $dto = new NearbyStoreRequestDTO($data);
+        $dto = new NearbyStoreRequestDTO(
+            (float) $data['latitude'],
+            (float) $data['longitude'],
+            (float) $data['radius']
+        );
 
         $this->assertEquals(51.5074, $dto->latitude);
         $this->assertEquals(0.1278, $dto->longitude);

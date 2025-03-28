@@ -50,11 +50,11 @@ class StoreServiceTest extends TestCase
      */
     public function testGetNearbyStores()
     {
-        $nearbyDTO = new NearbyStoreRequestDTO([
-            'latitude' => 51.5,
-            'longitude' => -0.12,
-            'radius' => 10,
-        ]);
+        $nearbyDTO = new NearbyStoreRequestDTO(
+            latitude: 51.5,
+            longitude: -0.12,
+            radius: 10,
+        );
 
         $storeRepositoryMock = $this->createMock(StoreRepositoryInterface::class);
         $postcodeServiceMock = $this->createMock(PostcodeService::class);
@@ -97,6 +97,6 @@ class StoreServiceTest extends TestCase
 
         $this->expectException(NotFoundHttpException::class);
 
-        $service->getDeliverableStores(new DeliverableRequestDTO(['postcode' => 'INVALID']));
+        $service->getDeliverableStores(new DeliverableRequestDTO(postcode: 'INVALID'));
     }
 }
