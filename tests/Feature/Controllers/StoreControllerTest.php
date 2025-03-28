@@ -17,10 +17,6 @@ class StoreControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * @return void
-     * @throws \PHPUnit\Framework\MockObject\Exception
-     */
     public function testStoreSuccess()
     {
         $data = [
@@ -31,8 +27,15 @@ class StoreControllerTest extends TestCase
             'type' => StoreType::SHOP->value,
             'max_delivery_distance' => 10.5
         ];
-
-        $storeDTO = new StoreDTO($data);
+        
+        $storeDTO = new StoreDTO(
+            $data['name'],
+            $data['latitude'],
+            $data['longitude'],
+            StoreStatus::from($data['status']),
+            StoreType::from($data['type']),
+            $data['max_delivery_distance']
+        );
 
         $storeServiceMock = $this->createMock(StoreService::class);
         $storeServiceMock->method('createStore')
@@ -58,10 +61,6 @@ class StoreControllerTest extends TestCase
         ]);
     }
 
-    /**
-     * @return void
-     * @throws \PHPUnit\Framework\MockObject\Exception
-     */
     public function testStoreFailure()
     {
         $data = [
@@ -94,10 +93,6 @@ class StoreControllerTest extends TestCase
         ]);
     }
 
-    /**
-     * @return void
-     * @throws \PHPUnit\Framework\MockObject\Exception
-     */
     public function testNearbySuccess()
     {
         $data = [
@@ -106,14 +101,15 @@ class StoreControllerTest extends TestCase
             'radius' => 10
         ];
 
-        $fakeNearbyStoreDTO = new StoreDTO([
-            'name' => 'Nearby Store',
-            'latitude' => 51.5074,
-            'longitude' => 0.1278,
-            'status' => StoreStatus::OPEN->value,
-            'type' => StoreType::SHOP->value,
-            'max_delivery_distance' => 10.5
-        ]);
+        // Create a fake StoreDTO instance using explicit parameters:
+        $fakeNearbyStoreDTO = new StoreDTO(
+            'Nearby Store',
+            51.5074,
+            0.1278,
+            StoreStatus::OPEN,
+            StoreType::SHOP,
+            10.5
+        );
 
         $storeServiceMock = $this->createMock(StoreService::class);
         $storeServiceMock->method('getNearbyStores')
@@ -140,10 +136,6 @@ class StoreControllerTest extends TestCase
         ]);
     }
 
-    /**
-     * @return void
-     * @throws \PHPUnit\Framework\MockObject\Exception
-     */
     public function testNearbyFailure()
     {
         $data = [
@@ -174,24 +166,20 @@ class StoreControllerTest extends TestCase
         ]);
     }
 
-    /**
-     * @return void
-     * @throws \PHPUnit\Framework\MockObject\Exception
-     */
     public function testDeliverableSuccess()
     {
         $data = [
             'postcode' => 'SW1A 1AA'
         ];
 
-        $fakeDeliverableStoreDTO = new StoreDTO([
-            'name' => 'Deliverable Store',
-            'latitude' => 51.5074,
-            'longitude' => 0.1278,
-            'status' => StoreStatus::OPEN->value,
-            'type' => StoreType::SHOP->value,
-            'max_delivery_distance' => 10.5
-        ]);
+        $fakeDeliverableStoreDTO = new StoreDTO(
+            'Deliverable Store',
+            51.5074,
+            0.1278,
+            StoreStatus::OPEN,
+            StoreType::SHOP,
+            10.5
+        );
 
         $storeServiceMock = $this->createMock(StoreService::class);
         $storeServiceMock->method('getDeliverableStores')
@@ -218,11 +206,6 @@ class StoreControllerTest extends TestCase
         ]);
     }
 
-
-    /**
-     * @return void
-     * @throws \PHPUnit\Framework\MockObject\Exception
-     */
     public function testDeliverableFailure()
     {
         $data = [
