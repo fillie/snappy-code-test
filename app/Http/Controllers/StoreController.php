@@ -61,7 +61,7 @@ class StoreController extends Controller
     public function nearby(NearbyStore $request): JsonResponse
     {
         try {
-            $result = $this->storeService->getNearbyStores(new NearbyStoreRequestDTO($request->all()));
+            $stores = $this->storeService->getNearbyStores(new NearbyStoreRequestDTO($request->all()));
         } catch (Exception $e) {
             $this->logger->error('Error searching nearby store: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
@@ -69,7 +69,7 @@ class StoreController extends Controller
             ], 500);
         }
 
-        return response()->json($result);
+        return response()->json(StoreResource::collection($stores));
     }
 
     /**
@@ -81,11 +81,7 @@ class StoreController extends Controller
     public function deliverable(Deliverable $request): JsonResponse
     {
         try {
-            $result = $this->storeService->getDeliverableStores(new DeliverableRequestDTO($request->all()));
-        } catch (HttpClientException) {
-            return response()->json([
-                'error' => 'No record was found for the given postcode.'
-            ], 404);
+            $stores = $this->storeService->getDeliverableStores(new DeliverableRequestDTO($request->all()));
         } catch (Exception $e) {
             $this->logger->error('Error searching stores for postcode: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
@@ -93,6 +89,6 @@ class StoreController extends Controller
             ], 500);
         }
 
-        return response()->json($result);
+        return response()->json(StoreResource::collection($stores));
     }
 }
