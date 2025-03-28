@@ -5,27 +5,22 @@ namespace App\DTO;
 use App\Enums\StoreStatus;
 use App\Enums\StoreType;
 
-class StoreDTO
+readonly class StoreDTO
 {
-    public string $name;
-    public float $latitude;
-    public float $longitude;
-    public StoreStatus $status;
-    public StoreType $type;
-    public float $maxDeliveryDistance;
-
     /**
-     * StoreDTO constructor.
-     *
-     * @param array $data
+     * @param string $name
+     * @param float $latitude
+     * @param float $longitude
+     * @param StoreStatus $status
+     * @param StoreType $type
+     * @param float $maxDeliveryDistance
      */
-    public function __construct(array $data)
-    {
-        $this->name = $data['name'];
-        $this->latitude = (float) $data['latitude'];
-        $this->longitude = (float) $data['longitude'];
-        $this->status = StoreStatus::from($data['status']);
-        $this->type = StoreType::from($data['type']);
-        $this->maxDeliveryDistance = (float) $data['max_delivery_distance'];
-    }
+    public function __construct(
+        public string $name,
+        public float $latitude,
+        public float $longitude,
+        public StoreStatus $status,
+        public StoreType $type,
+        public float $maxDeliveryDistance
+    ) {}
 }
