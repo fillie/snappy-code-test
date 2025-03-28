@@ -70,7 +70,11 @@ class StoreController extends Controller
     public function nearby(NearbyStore $request): JsonResponse
     {
         try {
-            $stores = $this->storeService->getNearbyStores(new NearbyStoreRequestDTO($request->all()));
+            $stores = $this->storeService->getNearbyStores(new NearbyStoreRequestDTO(
+                latitude: $request->input('latitude'),
+                longitude: $request->input('longitude'),
+                radius: $request->input('radius'),
+            ));
         } catch (Exception $e) {
             $this->logger->error('Error searching nearby store: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
@@ -90,7 +94,9 @@ class StoreController extends Controller
     public function deliverable(Deliverable $request): JsonResponse
     {
         try {
-            $stores = $this->storeService->getDeliverableStores(new DeliverableRequestDTO($request->all()));
+            $stores = $this->storeService->getDeliverableStores(new DeliverableRequestDTO(
+                postcode: $request->input('postcode'),
+            ));
         } catch (Exception $e) {
             $this->logger->error('Error searching stores for postcode: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([

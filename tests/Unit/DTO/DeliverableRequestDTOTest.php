@@ -13,7 +13,7 @@ class DeliverableRequestDTOTest extends TestCase
             'postcode' => 'NE16 4PQ'
         ];
 
-        $dto = new DeliverableRequestDTO($data);
+        $dto = new DeliverableRequestDTO($data['postcode']);
 
         $this->assertEquals('NE16 4PQ', $dto->postcode);
     }
