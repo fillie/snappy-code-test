@@ -30,7 +30,14 @@ class EloquentStoreRepository implements StoreRepositoryInterface
     {
         $store = $this->model->create($storeData);
 
-        return new StoreDTO($store->toArray());
+        return new StoreDTO(
+            name: $store->name,
+            latitude: $store->latitude,
+            longitude: $store->longitude,
+            status: $store->status,
+            type: $store->type,
+            maxDeliveryDistance: $store->max_delivery_distance,
+        );
     }
 
     /**
@@ -55,6 +62,13 @@ class EloquentStoreRepository implements StoreRepositoryInterface
             ->orderBy('distance', 'asc')
             ->get();
 
-        return $results->map(fn ($store) => new StoreDTO($store->toArray()));
+        return $results->map(fn ($store) => new StoreDTO(
+            name: $store->name,
+            latitude: $store->latitude,
+            longitude: $store->longitude,
+            status: $store->status,
+            type: $store->type,
+            maxDeliveryDistance: $store->max_delivery_distance,
+        ));
     }
 }
