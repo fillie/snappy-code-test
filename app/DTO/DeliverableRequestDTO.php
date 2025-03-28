@@ -2,12 +2,12 @@
 
 namespace App\DTO;
 
-class DeliverableRequestDTO
+readonly class DeliverableRequestDTO
 {
-    public string $postcode;
-
-    public function __construct(array $data)
-    {
-        $this->postcode = $data['postcode'];
-    }
+    /**
+     * @param string $postcode
+     */
+    public function __construct(
+        public string $postcode
+    ) {}
 }
