@@ -106,20 +106,18 @@ class StoreControllerTest extends TestCase
             'radius' => 10
         ];
 
-        $fakeNearbyStoreDTO = [
+        $fakeNearbyStoreDTO = new StoreDTO([
             'name' => 'Nearby Store',
             'latitude' => 51.5074,
             'longitude' => 0.1278,
             'status' => StoreStatus::OPEN->value,
             'type' => StoreType::SHOP->value,
             'max_delivery_distance' => 10.5
-        ];
-
-        $expectedResult = [ (array) $fakeNearbyStoreDTO ];
+        ]);
 
         $storeServiceMock = $this->createMock(StoreService::class);
         $storeServiceMock->method('getNearbyStores')
-            ->willReturn(collect($expectedResult));
+            ->willReturn(collect([$fakeNearbyStoreDTO]));
 
         App::instance(StoreService::class, $storeServiceMock);
         $loggerMock = $this->createMock(LoggerInterface::class);
@@ -128,11 +126,18 @@ class StoreControllerTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user, 'sanctum');
 
-        // Append query parameters to the URL
         $url = '/api/stores/nearby?' . http_build_query($data);
         $response = $this->getJson($url);
+
         $response->assertStatus(200);
-        $response->assertJson($expectedResult);
+        $response->assertJsonFragment([
+            'name' => 'Nearby Store',
+            'latitude' => 51.5074,
+            'longitude' => 0.1278,
+            'status' => StoreStatus::OPEN->value,
+            'type' => StoreType::SHOP->value,
+            'max_delivery_distance' => 10.5
+        ]);
     }
 
     /**
@@ -179,20 +184,18 @@ class StoreControllerTest extends TestCase
             'postcode' => 'SW1A 1AA'
         ];
 
-        $fakeDeliverableStoreDTO = [
+        $fakeDeliverableStoreDTO = new StoreDTO([
             'name' => 'Deliverable Store',
             'latitude' => 51.5074,
             'longitude' => 0.1278,
             'status' => StoreStatus::OPEN->value,
             'type' => StoreType::SHOP->value,
             'max_delivery_distance' => 10.5
-        ];
-
-        $expectedResult = [$fakeDeliverableStoreDTO];
+        ]);
 
         $storeServiceMock = $this->createMock(StoreService::class);
         $storeServiceMock->method('getDeliverableStores')
-            ->willReturn(collect($expectedResult));
+            ->willReturn(collect([$fakeDeliverableStoreDTO]));
 
         App::instance(StoreService::class, $storeServiceMock);
         $loggerMock = $this->createMock(LoggerInterface::class);
@@ -203,9 +206,18 @@ class StoreControllerTest extends TestCase
 
         $url = '/api/stores/deliverable?' . http_build_query($data);
         $response = $this->getJson($url);
+
         $response->assertStatus(200);
-        $response->assertJson($expectedResult);
+        $response->assertJsonFragment([
+            'name' => 'Deliverable Store',
+            'latitude' => 51.5074,
+            'longitude' => 0.1278,
+            'status' => StoreStatus::OPEN->value,
+            'type' => StoreType::SHOP->value,
+            'max_delivery_distance' => 10.5
+        ]);
     }
+
 
     /**
      * @return void
